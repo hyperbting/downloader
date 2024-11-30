@@ -1,0 +1,6 @@
+*_test.go
+./vendor
+./cmd
+./docs
+*.bat
+*.proto
