@@ -16,8 +16,11 @@
     <input type="checkbox" id="clearGroup" title="Clear Group" tabindex="-1">
     <br>
     <label for="number">Number:</label>
-    <input type="text" id="number" name="number" required>
-    <input type="checkbox" id="clearNumber" title="Clear Number" tabindex="-1">
+    <input type="text" id="number" value="000" name="number" required>
+    <input type="checkbox" id="clearNumber" title="Clear Number" tabindex="-1"> 
+	<br />
+	<input type="number" id="modifyNumberInput" min="-10" step="1" tabindex="-1">
+	<input type="button" value="mod" id="modifyNumberSubmit" tabindex="-1">
     <br>
     <label for="name">Name:</label>
     <input type="text" id="name" name="name" required>
@@ -33,54 +36,6 @@
     <br>
 </form>
 
-    <script>
-        document.getElementById('jsonForm').addEventListener('submit', async function (e) {
-            e.preventDefault(); // Prevent the default form submission behavior
-
-            // Get form data as JSON
-            const formData = new FormData(this);
-
-            // Clear values if corresponding checkboxes are checked
-            if (document.getElementById('clearGroup').checked) {
-                document.getElementById('group').value = '';
-            }
-            if (document.getElementById('clearNumber').checked) {
-                document.getElementById('number').value = '';
-            }
-            if (document.getElementById('clearName').checked) {
-                document.getElementById('name').value = '';
-            }
-
-            document.getElementById('result').value = '';
-
-            const jsonData = {};
-            formData.forEach((value, key) => {
-                jsonData[key] = value;
-            });
-
-            // Send JSON via fetch
-            try {
-                const response = await fetch('./download', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(jsonData),
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    //alert('Form submitted successfully: ' + JSON.stringify(result));
-                    document.getElementById('result').value = 'Form submitted successfully: ' + JSON.stringify(result);
-                } else {
-                    //alert('Error submitting form: ' + response.statusText);
-                    document.getElementById('result').value = 'Error submitting form: ' + response.statusText;
-                }
-            } catch (error) {
-                //alert('Network error: ' + error.message);
-                document.getElementById('result').value = 'Network error: ' + error.message;
-            }
-        });
-    </script>
+<script src="/js/index.js"></script>
 
 {{> views/partials/footer }}

@@ -18,6 +18,9 @@ func main() {
 		Views: engine,
 	})
 
+	// Serve static files from the "js" directory
+	app.Static("/js", "./views/js")
+	
 	app.Get("/", func(c *fiber.Ctx) error {
 		// Render index
 		return c.SendString("ok")
