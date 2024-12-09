@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"github.com/gofiber/fiber/v2/log"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,11 +32,12 @@ var (
 type TargetType string
 
 type DownloadTarget struct {
-	Source string `json:"source"  form:"source"`
-	Group  string `json:"group"  form:"group"`
-	Number string `json:"number"  form:"number"`
-	Name   string `json:"name"  form:"name"`
+	Source TargetType `json:"source"  form:"source"`
+	Group  string     `json:"group"  form:"group"`
+	Number string     `json:"number"  form:"number"`
+	Name   string     `json:"name"  form:"name"`
 
+	localPath  string
 	localFiles []string
 
 	category string
@@ -65,10 +67,10 @@ func (d *DownloadTarget) Sanitize() {
 func (d *DownloadTarget) BuildTitlePath(cat, sep string) *url.URL {
 	var copiedURL url.URL
 	switch d.Source {
-	case string(TargetDmm):
+	case TargetDmm:
 		copiedURL = dmmUrl
 		copiedURL.Path = d.BuildDmmTitlePath(cat, sep)
-	case string(TargetMgs):
+	case TargetMgs:
 		copiedURL = mgsUrl
 		copiedURL.Path = d.BuildMgsTitlePath()
 	}
@@ -83,7 +85,7 @@ func (d *DownloadTarget) BuildSubPath(cat string, sep string, cnt int, hd string
 	var copiedURL url.URL
 
 	switch d.Source {
-	case string(TargetDmm):
+	case TargetDmm:
 		copiedURL = dmmUrl
 		copiedURL.Path = path.Join(
 			"digital",
@@ -91,7 +93,7 @@ func (d *DownloadTarget) BuildSubPath(cat string, sep string, cnt int, hd string
 			fmt.Sprint(d.Group, sep, d.Number),
 			fmt.Sprint(d.Group, sep, d.Number+hd, "-", cnt, ".jpg"),
 		)
-	case string(TargetMgs):
+	case TargetMgs:
 		copiedURL = mgsUrl
 		copiedURL.Path = path.Join(
 			"images/prestige",
@@ -128,37 +130,16 @@ func (d *DownloadTarget) BuildFolderName(basePath string) string {
 
 func (d *DownloadTarget) DownloadRemoteFile(remoteFileUrl url.URL, localFilepath string) (err error) {
 
-	var headResp *http.Response
-	// Make a HEAD request
-	headResp, err = http.Head(remoteFileUrl.String())
-	if err != nil {
+	// Validate by Head
+	if err = validateContentLength(remoteFileUrl); err != nil {
 		return
 	}
-	defer headResp.Body.Close()
 
-	// Check Content-Length header
-	contentLengthStr := headResp.Header.Get("Content-Length")
-	if contentLengthStr == "" {
-		fmt.Println("Content-Length header is missing")
-	} else {
-		var contentLength int
-		contentLength, err = strconv.Atoi(contentLengthStr)
-		if err != nil {
-			fmt.Println("Error parsing Content-Length:", err)
-			return
-		} else {
-			fmt.Printf("%v File size: %d bytes\n", remoteFileUrl, contentLength)
-			if contentLength <= 2732 {
-				err = http.ErrContentLength
-			}
-			return
-		}
-	}
-
-	// Get the data
+	// GET the data
 	var resp *http.Response
 	resp, err = http.Get(remoteFileUrl.String())
 	if err != nil {
+		log.Infof("failed to download %v: %s", remoteFileUrl, err.Error())
 		return
 	}
 	defer resp.Body.Close()
@@ -168,29 +149,80 @@ func (d *DownloadTarget) DownloadRemoteFile(remoteFileUrl url.URL, localFilepath
 		return fmt.Errorf("failed to download file: %s", resp.Status)
 	}
 
-	// Create the file
-	var out *os.File
-	out, err = os.Create(localFilepath)
-	if err != nil {
+	// Save the response body to the local file
+	if err = saveToFile(resp.Body, localFilepath); err != nil {
 		return
+	}
+
+	d.localFiles = append(d.localFiles, localFilepath)
+
+	return
+}
+
+// Helper to validate Content-Length
+func validateContentLength(remoteFileUrl url.URL) (err error) {
+
+	var headResp *http.Response
+	// Make a HEAD request
+	if headResp, err = http.Head(remoteFileUrl.String()); err != nil {
+		return fmt.Errorf("failed to perform HEAD request: %w", err)
+	}
+	defer headResp.Body.Close()
+
+	contentLengthStr := headResp.Header.Get("Content-Length")
+	if contentLengthStr == "" {
+		return fmt.Errorf("Content-Length header is missing for %v", remoteFileUrl)
+	}
+
+	contentLength, err := strconv.Atoi(contentLengthStr)
+	if err != nil {
+		return fmt.Errorf("error parsing Content-Length for %v: %v", remoteFileUrl, err)
+	}
+	if contentLength <= 2732 {
+		return fmt.Errorf("content length too small for %v: %d bytes", remoteFileUrl, contentLength)
+	}
+
+	//log.Infof("File size for %v: %d bytes", remoteFileUrl, contentLength)
+	return
+}
+
+// Helper to save HTTP response body to a file
+func saveToFile(body io.Reader, filepath string) (err error) {
+	var out *os.File
+	if out, err = os.Create(filepath); err != nil {
+		return fmt.Errorf("failed to create file %v: %w", filepath, err)
 	}
 	defer out.Close()
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-
-	if err == nil {
-		d.localFiles = append(d.localFiles, localFilepath)
+	if _, err = io.Copy(out, body); err != nil {
+		return fmt.Errorf("failed to write to file %v: %w", filepath, err)
 	}
 
 	return
 }
 
-func (d *DownloadTarget) TryDownloadDmmMain() (err error) {
+func (d *DownloadTarget) TryDownloadMain(localPath string) (err error) {
+
+	if len(localPath) > 0 {
+		d.localPath = localPath
+	}
+
+	switch d.Source {
+	case TargetMgs:
+		return d.tryDownloadMgsMain()
+	case TargetDmm:
+	default:
+		return d.tryDownloadDmmMain()
+	}
+
+	return http.ErrMissingFile
+}
+
+func (d *DownloadTarget) tryDownloadDmmMain() (err error) {
 
 	//download main pic
 	for _, cat := range []string{"video", "amateur"} {
-		for _, sep := range []string{"00", ""} {
+		for _, sep := range []string{"00", "", "0"} {
 
 			// download main pic
 			u := d.BuildTitlePath(cat, sep)
@@ -198,7 +230,7 @@ func (d *DownloadTarget) TryDownloadDmmMain() (err error) {
 			// Get the file name from the URL path
 			fileName := path.Base(u.Path)
 
-			localFilepath := path.Join("/ref", fileName)
+			localFilepath := path.Join(d.localPath, fileName)
 			if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
 				d.localFiles = append(d.localFiles, localFilepath)
 				d.category = cat
@@ -211,42 +243,32 @@ func (d *DownloadTarget) TryDownloadDmmMain() (err error) {
 	return http.ErrMissingFile
 }
 
-//func (d *DownloadTarget) TryDownloadMain() (err error) {
-//
-//	//download main pic; determine from dmm or mgs
-//
-//	switch d.Source {
-//	case string(TargetDmm):
-//		for _, sep := range []string{"00", ""} {
-//
-//			// download main pic
-//			u := d.BuildTitlePath(sep)
-//
-//			// Get the file name from the URL path
-//			fileName := path.Base(u.Path)
-//
-//			localFilepath := path.Join("/ref", fileName)
-//			if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
-//				d.localFiles = append(d.localFiles, localFilepath)
-//				return
-//			}
-//		}
-//	case string(TargetMgs):
-//		// download main pic
-//		u := d.BuildTitlePath("")
-//
-//		// Get the file name from the URL path
-//		fileName := path.Base(u.Path)
-//		localFilepath := path.Join("/ref", fileName)
-//		if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
-//			d.localFiles = append(d.localFiles, localFilepath)
-//			return
-//		}
-//	}
-//	return
-//}
+func (d *DownloadTarget) tryDownloadMgsMain() (err error) {
 
-func (d *DownloadTarget) DownloadSub(localPath string) (err error) {
+	//download main pic
+	for _, cat := range []string{"video", "amateur"} {
+		for _, sep := range []string{"00", "", "0"} {
+
+			// download main pic
+			u := d.BuildTitlePath(cat, sep)
+
+			// Get the file name from the URL path
+			fileName := path.Base(u.Path)
+
+			localFilepath := path.Join(d.localPath, fileName)
+			if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
+				d.localFiles = append(d.localFiles, localFilepath)
+				d.category = cat
+				d.sep = sep
+				return
+			}
+		}
+	}
+
+	return http.ErrMissingFile
+}
+
+func (d *DownloadTarget) DownloadSub() (err error) {
 	for _, hd := range []string{"jp", ""} {
 		for cnt := 1; cnt <= 30; cnt++ {
 			// download main pic
@@ -255,7 +277,7 @@ func (d *DownloadTarget) DownloadSub(localPath string) (err error) {
 			// Get the file name from the URL path
 			fileName := path.Base(u.Path)
 
-			if err = d.DownloadRemoteFile(*u, path.Join(localPath, fileName)); err != nil {
+			if err = d.DownloadRemoteFile(*u, path.Join(d.localPath, fileName)); err != nil {
 				if cnt > 1 {
 					return nil
 				}

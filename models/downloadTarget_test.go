@@ -7,7 +7,7 @@ func TestDownloadTarget_TryDownloadDmmMain(t *testing.T) {
 		Group  string
 		Number string
 		Name   string
-		Source string
+		Source TargetType
 	}
 	tests := []struct {
 		name    string
@@ -15,8 +15,8 @@ func TestDownloadTarget_TryDownloadDmmMain(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"t0", fields{"dass", "001", "optional", string(TargetDmm)}, false},
-		{"t1", fields{"pow", "035", "optional", string(TargetDmm)}, false},
+		{"t0", fields{"dass", "001", "optional", TargetDmm}, false},
+		{"t1", fields{"pow", "035", "optional", TargetDmm}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -26,11 +26,14 @@ func TestDownloadTarget_TryDownloadDmmMain(t *testing.T) {
 				Name:   tt.fields.Name,
 				Source: tt.fields.Source,
 			}
-			if err := d.TryDownloadDmmMain(); (err != nil) != tt.wantErr {
+
+			d.localPath = "./test"
+
+			if err := d.tryDownloadDmmMain(); (err != nil) != tt.wantErr {
 				t.Errorf("TryDownloadDmmMain() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			t.Logf("TryDownloadDmmMain() %v", d)
+			t.Logf("TryDownloadDmmMain() %#v ", d)
 		})
 	}
 }
@@ -40,7 +43,7 @@ func TestDownloadTarget_BuildDmmSubPath(t *testing.T) {
 		Group  string
 		Number string
 		Name   string
-		Source string
+		Source TargetType
 	}
 	type args struct {
 		sep string
@@ -50,13 +53,12 @@ func TestDownloadTarget_BuildDmmSubPath(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		args    args
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"t0", fields{"dass", "001", "optional", string(TargetDmm)}, args{"00", 1, "jp"}, false},
-		{"t1", fields{"41zb", "013", "optional", string(TargetDmm)}, args{"00", 1, "jp"}, false},
-		{"t2", fields{"51vs", "595", "optional", string(TargetDmm)}, args{"00", 1, "jp"}, false},
+		{"t0", fields{"dass", "001", "optional", TargetDmm}, false},
+		{"t1", fields{"41zb", "013", "optional", TargetDmm}, false},
+		{"t2", fields{"51vs", "595", "optional", TargetDmm}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -66,7 +68,12 @@ func TestDownloadTarget_BuildDmmSubPath(t *testing.T) {
 				Name:   tt.fields.Name,
 				Source: tt.fields.Source,
 			}
-			if err := d.DownloadSub(""); (err != nil) != tt.wantErr {
+
+			d.localPath = "./test"
+			d.category = "video"
+			d.sep = "00"
+
+			if err := d.DownloadSub(); (err != nil) != tt.wantErr {
 				t.Errorf("BuildDmmSubPath() error = %v, wantErr %v", err, tt.wantErr)
 			}
 

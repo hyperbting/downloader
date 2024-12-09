@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/mustache/v2"
 	"log"
+	"net/http"
 	"os/exec"
 )
 
@@ -69,9 +70,21 @@ func main() {
 		}
 
 		p.Sanitize()
+		log.Println(p)
 
-		//if err != nil {
-		//	return c.JSON(fiber.Map{"error": err.Error()})
+		// try download main image
+		if err := p.TryDownloadMain("/ref"); err != nil {
+			return c.SendStatus(http.StatusBadRequest)
+		}
+
+		// download sub images
+		if err := p.DownloadSub(); err != nil {
+			return c.SendStatus(http.StatusBadRequest)
+		}
+
+		// move to desired folder
+		//if err := p(); err != nil {
+		//	return c.SendStatus(http.StatusBadRequest)
 		//}
 
 		return c.JSON(fiber.Map{"result": "ok", "output": string("")})
