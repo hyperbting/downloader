@@ -61,7 +61,8 @@ document.getElementById('jsonForm').addEventListener('submit', async function (e
 
 	// Send JSON via fetch
 	try {
-		const response = await fetch('./download', {
+		//const response = await fetch('./download', {
+		const response = await fetch(submitPath, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

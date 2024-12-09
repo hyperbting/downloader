@@ -20,7 +20,7 @@ func main() {
 
 	// Serve static files from the "js" directory
 	app.Static("/js", "./views/js")
-	
+
 	app.Get("/", func(c *fiber.Ctx) error {
 		// Render index
 		return c.SendString("ok")
@@ -29,7 +29,8 @@ func main() {
 	app.Get("/download", func(c *fiber.Ctx) error {
 		// Render index
 		return c.Render("index", fiber.Map{
-			"Title": "Hello, World!",
+			"Title":      "Hello, World!",
+			"SubmitPath": "./download",
 		})
 	})
 
