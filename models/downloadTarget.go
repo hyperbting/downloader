@@ -77,17 +77,17 @@ func (d *DownloadTarget) BuildTitlePath(cat, sep string) *url.URL {
 	switch d.Source {
 	case TargetDmm:
 		copiedURL = dmmUrl
-		copiedURL.Path = d.BuildDmmTitlePath(cat, sep)
+		copiedURL.Path = path.Join(cat, d.Group+sep+d.Number, d.Group+sep+d.Number+"pl.jpg") //d.BuildDmmTitlePath(cat, sep)
 	case TargetMgs:
 		copiedURL = mgsUrl
-		copiedURL.Path = d.BuildMgsTitlePath()
+		copiedURL.Path = path.Join("images/prestige", d.Group, d.Number, "pb_e_"+d.Group+"-"+d.Number+".jpg") //d.BuildMgsTitlePath()
 	}
 	return &copiedURL
 }
 
-func (d *DownloadTarget) BuildDmmTitlePath(cat, sep string) string {
-	return path.Join("digital", cat, d.Group+sep+d.Number, d.Group+sep+d.Number+"pl.jpg")
-}
+//func (d *DownloadTarget) BuildDmmTitlePath(cat, sep string) string {
+//	return path.Join(cat, d.Group+sep+d.Number, d.Group+sep+d.Number+"pl.jpg")
+//}
 
 func (d *DownloadTarget) BuildSubPath(cat string, sep string, cnt int, hd string) *url.URL {
 	var copiedURL url.URL
@@ -96,7 +96,6 @@ func (d *DownloadTarget) BuildSubPath(cat string, sep string, cnt int, hd string
 	case TargetDmm:
 		copiedURL = dmmUrl
 		copiedURL.Path = path.Join(
-			"digital",
 			cat,
 			fmt.Sprint(d.Group, sep, d.Number),
 			fmt.Sprint(d.Group, sep, d.Number+hd, "-", cnt, ".jpg"),
@@ -115,9 +114,9 @@ func (d *DownloadTarget) BuildSubPath(cat string, sep string, cnt int, hd string
 	return &copiedURL
 }
 
-func (d *DownloadTarget) BuildMgsTitlePath() string {
-	return path.Join("images/prestige", d.Group, d.Number, "pb_e_"+d.Group+"-"+d.Number+".jpg")
-}
+//func (d *DownloadTarget) BuildMgsTitlePath() string {
+//	return path.Join("images/prestige", d.Group, d.Number, "pb_e_"+d.Group+"-"+d.Number+".jpg")
+//}
 
 func (d *DownloadTarget) BuildFolderName() (withoutName, withName string) {
 
@@ -229,7 +228,7 @@ func (d *DownloadTarget) TryDownloadMain() (err error) {
 func (d *DownloadTarget) tryDownloadDmmMain() (err error) {
 
 	//download main pic
-	for _, cat := range []string{"video", "amateur"} {
+	for _, cat := range []string{"digital/video", "digital/amateur", "mono/movie"} {
 		for _, sep := range []string{"00", "", "0"} {
 
 			// download main pic
@@ -251,27 +250,16 @@ func (d *DownloadTarget) tryDownloadDmmMain() (err error) {
 }
 
 func (d *DownloadTarget) tryDownloadMgsMain() (err error) {
+	// download main pic
+	u := d.BuildTitlePath("", "")
 
-	//download main pic
-	for _, cat := range []string{"video", "amateur"} {
-		for _, sep := range []string{"00", "", "0"} {
+	// Get the file name from the URL path
+	fileName := path.Base(u.Path)
 
-			// download main pic
-			u := d.BuildTitlePath(cat, sep)
-
-			// Get the file name from the URL path
-			fileName := path.Base(u.Path)
-
-			localFilepath := path.Join(d.localPath, fileName)
-			if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
-				//d.localFiles = append(d.localFiles, localFilepath)
-				d.category = cat
-				d.sep = sep
-				return
-			}
-		}
+	localFilepath := path.Join(d.localPath, fileName)
+	if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
+		return
 	}
-
 	return http.ErrMissingFile
 }
 
