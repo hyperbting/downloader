@@ -35,6 +35,14 @@ func main() {
 		})
 	})
 
+	app.Get("/download2", func(c *fiber.Ctx) error {
+		// Render index
+		return c.Render("index", fiber.Map{
+			"Title":      "Hello, World!",
+			"SubmitPath": "./download2",
+		})
+	})
+
 	app.Post("/download", func(c *fiber.Ctx) error {
 		p := new(models.DownloadTarget)
 		if err := c.BodyParser(p); err != nil {
@@ -69,23 +77,29 @@ func main() {
 			return err
 		}
 
+		localBasePath := "/ref"
+		p.SetLocalPathBase(localBasePath)
+
 		p.Sanitize()
 		log.Println(p)
 
 		// try download main image
-		if err := p.TryDownloadMain("/ref"); err != nil {
+		if err := p.TryDownloadMain(); err != nil {
+			log.Printf("TryDownloadMain() err:%v\n", err)
 			return c.SendStatus(http.StatusBadRequest)
 		}
 
 		// download sub images
 		if err := p.DownloadSub(); err != nil {
+			log.Printf("DownloadSub() err:%v\n", err)
 			return c.SendStatus(http.StatusBadRequest)
 		}
 
 		// move to desired folder
-		//if err := p(); err != nil {
-		//	return c.SendStatus(http.StatusBadRequest)
-		//}
+		if err := p.MoveLocalFilesUnderFolder(); err != nil {
+			log.Printf("MoveLocalFilesUnderFolder() err:%v\n", err)
+			return c.SendStatus(http.StatusBadRequest)
+		}
 
 		return c.JSON(fiber.Map{"result": "ok", "output": string("")})
 	})

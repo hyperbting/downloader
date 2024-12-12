@@ -44,6 +44,14 @@ type DownloadTarget struct {
 	sep      string
 }
 
+func (d *DownloadTarget) SetLocalPathBase(basePath string) {
+	if len(basePath) <= 0 {
+		return
+	}
+
+	d.localPath = basePath
+}
+
 func (d *DownloadTarget) Sanitize() {
 	// Replace all occurrences of \t with a single space
 	d.Group = strings.ReplaceAll(d.Group, "\t", " ")
@@ -111,7 +119,7 @@ func (d *DownloadTarget) BuildMgsTitlePath() string {
 	return path.Join("images/prestige", d.Group, d.Number, "pb_e_"+d.Group+"-"+d.Number+".jpg")
 }
 
-func (d *DownloadTarget) BuildFolderName(basePath string) string {
+func (d *DownloadTarget) BuildFolderName() (withoutName, withName string) {
 
 	tmpGroup := d.Group
 	// Extract the part of Group after the last '_'
@@ -123,9 +131,14 @@ func (d *DownloadTarget) BuildFolderName(basePath string) string {
 
 	// Remove numeric prefix if tmpGroup starts with digits
 	tmpGroup = strings.TrimLeftFunc(tmpGroup, unicode.IsDigit)
+	tmpGroup = strings.ToUpper(tmpGroup)
 
-	// Construct the destination folder path
-	return filepath.Join(basePath, fmt.Sprintf("[%s-%s]%s", tmpGroup, d.Number, d.Name))
+	//first part: "/ref/[ABC-123]"
+	withoutName = filepath.Join(d.localPath, fmt.Sprintf("[%s-%s]", tmpGroup, d.Number))
+	// Construct the destination folder path: /ref/[ABC-123]other
+	withName = withoutName + d.Name
+
+	return
 }
 
 func (d *DownloadTarget) DownloadRemoteFile(remoteFileUrl url.URL, localFilepath string) (err error) {
@@ -201,18 +214,13 @@ func saveToFile(body io.Reader, filepath string) (err error) {
 	return
 }
 
-func (d *DownloadTarget) TryDownloadMain(localPath string) (err error) {
-
-	if len(localPath) > 0 {
-		d.localPath = localPath
-	}
-
+func (d *DownloadTarget) TryDownloadMain() (err error) {
 	switch d.Source {
 	case TargetMgs:
 		return d.tryDownloadMgsMain()
 	case TargetDmm:
-	default:
 		return d.tryDownloadDmmMain()
+	default:
 	}
 
 	return http.ErrMissingFile
@@ -232,7 +240,6 @@ func (d *DownloadTarget) tryDownloadDmmMain() (err error) {
 
 			localFilepath := path.Join(d.localPath, fileName)
 			if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
-				d.localFiles = append(d.localFiles, localFilepath)
 				d.category = cat
 				d.sep = sep
 				return
@@ -257,7 +264,7 @@ func (d *DownloadTarget) tryDownloadMgsMain() (err error) {
 
 			localFilepath := path.Join(d.localPath, fileName)
 			if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
-				d.localFiles = append(d.localFiles, localFilepath)
+				//d.localFiles = append(d.localFiles, localFilepath)
 				d.category = cat
 				d.sep = sep
 				return
@@ -292,13 +299,21 @@ func (d *DownloadTarget) DownloadSub() (err error) {
 	return
 }
 
-func (d *DownloadTarget) MoveLocalFilesUnderFolder(basePath string) (err error) {
+func (d *DownloadTarget) MoveLocalFilesUnderFolder() (err error) {
 
 	// Construct the destination folder path
-	destinationFolder := d.BuildFolderName(basePath)
+	destinationFolderWithoutName, destinationFolderWithName := d.BuildFolderName()
 
 	// Ensure the destination folder exists
-	err = os.MkdirAll(destinationFolder, os.ModePerm)
+	var dirPath string
+	for _, dirPath = range []string{destinationFolderWithName, destinationFolderWithoutName} {
+		if err = os.MkdirAll(dirPath, os.ModePerm); err != nil {
+			log.Info("Fail to MkdirAll", dirPath)
+			continue
+		}
+
+		break
+	}
 	if err != nil {
 		return fmt.Errorf("failed to create destination folder: %w", err)
 	}
@@ -308,11 +323,9 @@ func (d *DownloadTarget) MoveLocalFilesUnderFolder(basePath string) (err error) 
 		// Extract the file name
 		fileName := filepath.Base(file)
 		// Define the destination path
-		destPath := filepath.Join(destinationFolder, fileName)
-
+		destPath := filepath.Join(dirPath, fileName)
 		// Move the file
-		err := os.Rename(file, destPath)
-		if err != nil {
+		if err = os.Rename(file, destPath); err != nil {
 			return fmt.Errorf("failed to move file %s to %s: %w", file, destPath, err)
 		}
 	}
