@@ -81,3 +81,49 @@ func TestDownloadTarget_BuildDmmSubPath(t *testing.T) {
 		})
 	}
 }
+
+func TestDownloadTarget_BuildFolderName(t *testing.T) {
+	type fields struct {
+		Source     TargetType
+		Group      string
+		Number     string
+		Name       string
+		localPath  string
+		localFiles []string
+		category   string
+		sep        string
+	}
+	tests := []struct {
+		name            string
+		fields          fields
+		wantWithoutName string
+		wantWithName    string
+	}{
+		// TODO: Add test cases.
+		{"t0", fields{Source: TargetDmm, Group: "test", Number: "456", Name: "abc"}, "[TEST-456]", "[TEST-456]abc"},
+		{"t1", fields{Source: TargetDmm, Group: "123test", Number: "456", Name: "abc"}, "[TEST-456]", "[TEST-456]abc"},
+		{"t2", fields{Source: TargetDmm, Group: "h_123test", Number: "456", Name: "abc"}, "[TEST-456]", "[TEST-456]abc"},
+		{"t3", fields{Source: TargetDmm, Group: "678_123test", Number: "456", Name: "abc"}, "[TEST-456]", "[TEST-456]abc"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &DownloadTarget{
+				Source:     tt.fields.Source,
+				Group:      tt.fields.Group,
+				Number:     tt.fields.Number,
+				Name:       tt.fields.Name,
+				localPath:  tt.fields.localPath,
+				localFiles: tt.fields.localFiles,
+				category:   tt.fields.category,
+				sep:        tt.fields.sep,
+			}
+			gotWithoutName, gotWithName := d.BuildFolderName()
+			if gotWithoutName != tt.wantWithoutName {
+				t.Errorf("BuildFolderName() gotWithoutName = %v, want %v", gotWithoutName, tt.wantWithoutName)
+			}
+			if gotWithName != tt.wantWithName {
+				t.Errorf("BuildFolderName() gotWithName = %v, want %v", gotWithName, tt.wantWithName)
+			}
+		})
+	}
+}

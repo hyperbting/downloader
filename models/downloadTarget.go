@@ -126,7 +126,7 @@ func (d *DownloadTarget) BuildFolderName() (withoutName, withName string) {
 	tmpGroup = groupParts[len(groupParts)-1]
 
 	groupParts2 := strings.Split(tmpGroup, "-")
-	tmpGroup = groupParts[len(groupParts2)-1]
+	tmpGroup = groupParts2[len(groupParts2)-1]
 
 	// Remove numeric prefix if tmpGroup starts with digits
 	tmpGroup = strings.TrimLeftFunc(tmpGroup, unicode.IsDigit)
