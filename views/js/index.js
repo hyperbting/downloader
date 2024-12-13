@@ -1,12 +1,24 @@
 const numDeltaInput = document.getElementById('modifyNumberInput');
 const modNumberButton = document.getElementById('modifyNumberSubmit');
 
+
+const modNumberPlusOneButton = document.getElementById('modifyNumberPlusOneSubmit');
+const modNumberMinusOneButton = document.getElementById('modifyNumberMinusOneSubmit');
+
 const numberInput = document.getElementById('number');
 
 // Event listeners for the buttons
 modNumberButton.addEventListener('click', () => {
 	let currentModValue = parseInt(numDeltaInput.value, 10) || 0;
 	modifyStringWithPadding(currentModValue, 3);
+});
+
+modNumberPlusOneButton.addEventListener('click', () => {
+	modifyStringWithPadding(1, 3);
+});
+
+modNumberMinusOneButton.addEventListener('click', () => {
+	modifyStringWithPadding(-1, 3);
 });
 
 numberInput.addEventListener('change', () => {
