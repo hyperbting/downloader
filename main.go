@@ -89,10 +89,14 @@ func main() {
 			return c.SendStatus(http.StatusBadRequest)
 		}
 
-		// download sub images
+		// download sub images; do not care if err occurred
 		if err := p.DownloadSub(); err != nil {
 			log.Printf("DownloadSub() err:%v\n", err)
-			return c.SendStatus(http.StatusBadRequest)
+			//return c.SendStatus(http.StatusBadRequest)
+		}
+
+		if !p.HadFilesDownloaded() {
+			return c.JSON(fiber.Map{"result": "Empty", "output": string("NoFileDownloaded")})
 		}
 
 		// move to desired folder

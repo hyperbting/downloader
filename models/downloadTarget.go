@@ -17,12 +17,15 @@ import (
 var (
 	TargetDmm TargetType = "dmm"
 	TargetMgs TargetType = "mgs"
+	dmmCats              = []string{"digital/video", "digital/amateur", "mono/movie"}
+	dmmSeps              = []string{"00", "", "0"}
+	mgsCats              = []string{"images/prestige", "images/jackson"}
+	mgsSeps              = []string{""}
 
 	dmmUrl = url.URL{
 		Scheme: "https",
 		Host:   "pics.dmm.co.jp",
 	}
-
 	mgsUrl = url.URL{
 		Scheme: "https",
 		Host:   "image.mgstage.com",
@@ -40,8 +43,15 @@ type DownloadTarget struct {
 	localPath  string
 	localFiles []string
 
-	category string
-	sep      string
+	//category string
+	sep string
+}
+
+func (d *DownloadTarget) HadFilesDownloaded() bool {
+	if d.localFiles == nil {
+		return false
+	}
+	return len(d.localFiles) <= 0
 }
 
 func (d *DownloadTarget) SetLocalPathBase(basePath string) {
@@ -58,18 +68,17 @@ func (d *DownloadTarget) Sanitize() {
 	// Replace multiple spaces with a single space
 	d.Group = strings.Join(strings.Fields(d.Group), " ")
 	// Remove " " prefix and Suffix
-	d.Group = strings.TrimPrefix(d.Group, " ")
-	d.Group = strings.TrimSuffix(d.Group, " ")
+	d.Group = strings.TrimPrefix(strings.TrimSuffix(d.Group, " "), " ")
 
 	d.Group = strings.ToLower(d.Group)
 
 	// Replace all occurrences of \t with a single space
 	d.Name = strings.ReplaceAll(d.Name, "\t", " ")
+	d.Name = strings.ReplaceAll(d.Name, "／", " ")
 	// Replace multiple spaces with a single space
 	d.Name = strings.Join(strings.Fields(d.Name), " ")
 	// Remove " " prefix and Suffix
-	d.Name = strings.TrimPrefix(d.Name, " ")
-	d.Name = strings.TrimSuffix(d.Name, " ")
+	d.Name = strings.TrimPrefix(strings.TrimSuffix(d.Name, " "), " ")
 }
 
 func (d *DownloadTarget) BuildTitlePath(cat, sep string) *url.URL {
@@ -77,10 +86,10 @@ func (d *DownloadTarget) BuildTitlePath(cat, sep string) *url.URL {
 	switch d.Source {
 	case TargetDmm:
 		copiedURL = dmmUrl
-		copiedURL.Path = path.Join(cat, d.Group+sep+d.Number, d.Group+sep+d.Number+"pl.jpg") //d.BuildDmmTitlePath(cat, sep)
+		copiedURL.Path = path.Join(cat, d.Group+sep+d.Number, d.Group+sep+d.Number+"pl.jpg")
 	case TargetMgs:
 		copiedURL = mgsUrl
-		copiedURL.Path = path.Join("images/prestige", d.Group, d.Number, "pb_e_"+d.Group+"-"+d.Number+".jpg") //d.BuildMgsTitlePath()
+		copiedURL.Path = path.Join(cat, d.Group, d.Number, "pb_e_"+d.Group+"-"+d.Number+".jpg")
 	}
 	return &copiedURL
 }
@@ -103,7 +112,7 @@ func (d *DownloadTarget) BuildSubPath(cat string, sep string, cnt int, hd string
 	case TargetMgs:
 		copiedURL = mgsUrl
 		copiedURL.Path = path.Join(
-			"images/prestige",
+			cat,
 			d.Group,
 			d.Number,
 			fmt.Sprint("cap_e_", cnt, "_", d.Group, "-", d.Number, ".jpg"),
@@ -214,22 +223,20 @@ func saveToFile(body io.Reader, filepath string) (err error) {
 }
 
 func (d *DownloadTarget) TryDownloadMain() (err error) {
+	var cats, seps []string
 	switch d.Source {
 	case TargetMgs:
-		return d.tryDownloadMgsMain()
+		cats = mgsCats
+		seps = mgsSeps
 	case TargetDmm:
-		return d.tryDownloadDmmMain()
+		cats = dmmCats
+		seps = dmmSeps
 	default:
 	}
 
-	return http.ErrMissingFile
-}
-
-func (d *DownloadTarget) tryDownloadDmmMain() (err error) {
-
 	//download main pic
-	for _, cat := range []string{"digital/video", "digital/amateur", "mono/movie"} {
-		for _, sep := range []string{"00", "", "0"} {
+	for _, cat := range cats {
+		for _, sep := range seps {
 
 			// download main pic
 			u := d.BuildTitlePath(cat, sep)
@@ -239,49 +246,61 @@ func (d *DownloadTarget) tryDownloadDmmMain() (err error) {
 
 			localFilepath := path.Join(d.localPath, fileName)
 			if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
-				d.category = cat
+				//d.category = cat
 				d.sep = sep
 				return
 			}
+
+			log.Info("Fail to download ", *u)
 		}
 	}
 
 	return http.ErrMissingFile
 }
 
-func (d *DownloadTarget) tryDownloadMgsMain() (err error) {
-	// download main pic
-	u := d.BuildTitlePath("", "")
-
-	// Get the file name from the URL path
-	fileName := path.Base(u.Path)
-
-	localFilepath := path.Join(d.localPath, fileName)
-	if err = d.DownloadRemoteFile(*u, localFilepath); err == nil {
-		return
-	}
-	return http.ErrMissingFile
-}
-
 func (d *DownloadTarget) DownloadSub() (err error) {
+	var cats []string
+	switch d.Source {
+	case TargetMgs:
+		cats = mgsCats
+	case TargetDmm:
+		cats = dmmCats
+	default:
+	}
+
+	var correctCat, correctHd string
+outerLoop: // Label for the outermost loop
 	for _, hd := range []string{"jp", ""} {
-		for cnt := 1; cnt <= 30; cnt++ {
-			// download main pic
-			u := d.BuildSubPath(d.category, d.sep, cnt, hd)
+		for _, cat := range cats {
+			for cnt := 0; cnt <= 1; cnt++ {
+				u := d.BuildSubPath(cat, d.sep, cnt, hd)
 
-			// Get the file name from the URL path
-			fileName := path.Base(u.Path)
+				// Get the file name from the URL path
+				fileName := path.Base(u.Path)
 
-			if err = d.DownloadRemoteFile(*u, path.Join(d.localPath, fileName)); err != nil {
-				if cnt > 1 {
-					return nil
+				if err = d.DownloadRemoteFile(*u, path.Join(d.localPath, fileName)); err == nil {
+					correctCat = cat
+					correctHd = hd
+					break outerLoop // Exit all loops once condition is met
 				}
-
-				if hd == "" {
-					return nil
-				}
-				break
 			}
+		}
+	}
+
+	if correctCat == "" {
+		log.Infof("Fail to find proper category")
+		return http.ErrBodyNotAllowed
+	}
+
+	for cnt := 2; cnt <= 100; cnt++ {
+		u := d.BuildSubPath(correctCat, d.sep, cnt, correctHd)
+
+		// Get the file name from the URL path
+		fileName := path.Base(u.Path)
+
+		if err = d.DownloadRemoteFile(*u, path.Join(d.localPath, fileName)); err != nil {
+			//we don't care if 2~n can be retrieved or not as long as the first image does exist
+			return nil
 		}
 	}
 	return
@@ -307,14 +326,16 @@ func (d *DownloadTarget) MoveLocalFilesUnderFolder() (err error) {
 	}
 
 	// Iterate over the local files and move them
-	for _, file := range d.localFiles {
+	for _, fil := range d.localFiles {
 		// Extract the file name
-		fileName := filepath.Base(file)
+		fileName := filepath.Base(fil)
 		// Define the destination path
 		destPath := filepath.Join(dirPath, fileName)
+
+		//log.Infof("Moving file %v to %v", fil, destPath)
 		// Move the file
-		if err = os.Rename(file, destPath); err != nil {
-			return fmt.Errorf("failed to move file %s to %s: %w", file, destPath, err)
+		if err = os.Rename(fil, destPath); err != nil {
+			log.Infof("failed to move file %v to %v:%v", fil, destPath, err)
 		}
 	}
 
