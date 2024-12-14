@@ -3,8 +3,8 @@ package main
 import (
 	"downloader/models"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/template/mustache/v2"
-	"log"
 	"net/http"
 	"os/exec"
 )
@@ -52,7 +52,7 @@ func main() {
 		//log.Println(p.Group)
 		//log.Println(p.Number)
 		//log.Println(p.Name)
-		log.Println(p)
+		log.Info(p)
 
 		p.Sanitize()
 
@@ -61,7 +61,7 @@ func main() {
 
 		// Set the working directory
 		cmd.Dir = "/ref"
-		log.Println(cmd.String())
+		log.Info(cmd.String())
 		// Capture the output
 		output, err := cmd.CombinedOutput()
 		if err != nil {
@@ -81,17 +81,17 @@ func main() {
 		p.SetLocalPathBase(localBasePath)
 
 		p.Sanitize()
-		log.Println(p)
+		log.Info(p)
 
 		// try download main image
 		if err := p.TryDownloadMain(); err != nil {
-			log.Printf("TryDownloadMain() err:%v\n", err)
+			log.Infof("TryDownloadMain() err:%v\n", err)
 			return c.SendStatus(http.StatusBadRequest)
 		}
 
 		// download sub images; do not care if err occurred
 		if err := p.DownloadSub(); err != nil {
-			log.Printf("DownloadSub() err:%v\n", err)
+			log.Infof("DownloadSub() err:%v\n", err)
 			//return c.SendStatus(http.StatusBadRequest)
 		}
 
@@ -101,7 +101,7 @@ func main() {
 
 		// move to desired folder
 		if err := p.MoveLocalFilesUnderFolder(); err != nil {
-			log.Printf("MoveLocalFilesUnderFolder() err:%v\n", err)
+			log.Infof("MoveLocalFilesUnderFolder() err:%v\n", err)
 			return c.SendStatus(http.StatusBadRequest)
 		}
 
