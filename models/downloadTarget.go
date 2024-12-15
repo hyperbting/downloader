@@ -51,7 +51,7 @@ func (d *DownloadTarget) HadFilesDownloaded() bool {
 	if d.localFiles == nil {
 		return false
 	}
-	return len(d.localFiles) <= 0
+	return len(d.localFiles) > 0
 }
 
 func (d *DownloadTarget) SetLocalPathBase(basePath string) {
