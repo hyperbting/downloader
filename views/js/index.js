@@ -7,6 +7,36 @@ const modNumberMinusOneButton = document.getElementById('modifyNumberMinusOneSub
 
 const numberInput = document.getElementById('number');
 
+const optionalNameInput = document.getElementById('name')
+
+const formSubmit = document.getElementById('formSubmit');
+
+// Event listeners for Keyboards
+document.addEventListener('keyup', (e) => {
+	
+	switch (e.code) {
+		case "ArrowUp":
+			modifyStringWithPadding(10, 3);
+			optionalNameInput.focus();
+			break;
+		case "ArrowDown":
+			modifyStringWithPadding(-10, 3);
+			optionalNameInput.focus();
+			break;
+		case "ArrowLeft":
+			modifyStringWithPadding(-1, 3);
+			optionalNameInput.focus();
+			break;
+		case "ArrowRight":
+			modifyStringWithPadding(1, 3);
+			optionalNameInput.focus();
+			break;
+		default:
+			// Handle other keys or do nothing
+			break;
+	}
+});
+
 // Event listeners for the buttons
 modNumberButton.addEventListener('click', () => {
 	let currentModValue = parseInt(numDeltaInput.value, 10) || 0;

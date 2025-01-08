@@ -2,7 +2,7 @@
 
 <h1>{{Title}}</h1>
 
-<form id="jsonForm">
+<form id="jsonForm" autocomplete="off">
     <input type="text" name="source" list="sources" placeholder="Select Source" />
 	  <datalist id="sources">
 	    <option>Select Source</option>
@@ -34,7 +34,7 @@
     <input type="checkbox" id="clearName" title="Clear Name" tabindex="-1">
     <br>
     <br>
-    <button type="submit">Submit</button>
+    <button type="submit" id="formSubmit">Submit</button>
     <br>
     <br>
     <label for="result">Result:</label>

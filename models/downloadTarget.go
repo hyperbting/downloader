@@ -17,7 +17,7 @@ import (
 var (
 	TargetDmm TargetType = "dmm"
 	TargetMgs TargetType = "mgs"
-	dmmCats              = []string{"digital/video", "digital/amateur", "mono/movie"}
+	dmmCats              = []string{"digital/video", "digital/amateur", "mono/movie", "digital/e-book"}
 	dmmSeps              = []string{"00", "", "0"}
 	mgsCats              = []string{"images/prestige", "images/jackson"}
 	mgsSeps              = []string{""}
@@ -73,8 +73,10 @@ func (d *DownloadTarget) Sanitize() {
 	d.Group = strings.ToLower(d.Group)
 
 	// Replace all occurrences of \t with a single space
-	d.Name = strings.ReplaceAll(d.Name, "\t", " ")
-	d.Name = strings.ReplaceAll(d.Name, "／", " ")
+	for _, c := range []string{"\t", "/", "／"} {
+		d.Name = strings.ReplaceAll(d.Name, c, " ")
+	}
+
 	// Replace multiple spaces with a single space
 	d.Name = strings.Join(strings.Fields(d.Name), " ")
 	// Remove " " prefix and Suffix
