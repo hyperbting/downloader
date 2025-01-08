@@ -5,30 +5,33 @@ const modNumberButton = document.getElementById('modifyNumberSubmit');
 const modNumberPlusOneButton = document.getElementById('modifyNumberPlusOneSubmit');
 const modNumberMinusOneButton = document.getElementById('modifyNumberMinusOneSubmit');
 
+const numberLengthInput = document.getElementById('numberLength');
 const numberInput = document.getElementById('number');
 
 const optionalNameInput = document.getElementById('name')
 
 const formSubmit = document.getElementById('formSubmit');
 
+let currentNumberLength = 3;
+
 // Event listeners for Keyboards
 document.addEventListener('keyup', (e) => {
 	
 	switch (e.code) {
 		case "ArrowUp":
-			modifyStringWithPadding(10, 3);
+			modifyStringWithPadding(10, currentNumberLength);
 			optionalNameInput.focus();
 			break;
 		case "ArrowDown":
-			modifyStringWithPadding(-10, 3);
+			modifyStringWithPadding(-10, currentNumberLength);
 			optionalNameInput.focus();
 			break;
 		case "ArrowLeft":
-			modifyStringWithPadding(-1, 3);
+			modifyStringWithPadding(-1, currentNumberLength);
 			optionalNameInput.focus();
 			break;
 		case "ArrowRight":
-			modifyStringWithPadding(1, 3);
+			modifyStringWithPadding(1, currentNumberLength);
 			optionalNameInput.focus();
 			break;
 		default:
@@ -40,19 +43,24 @@ document.addEventListener('keyup', (e) => {
 // Event listeners for the buttons
 modNumberButton.addEventListener('click', () => {
 	let currentModValue = parseInt(numDeltaInput.value, 10) || 0;
-	modifyStringWithPadding(currentModValue, 3);
+	modifyStringWithPadding(currentModValue, currentNumberLength);
 });
 
 modNumberPlusOneButton.addEventListener('click', () => {
-	modifyStringWithPadding(1, 3);
+	modifyStringWithPadding(1, currentNumberLength);
 });
 
 modNumberMinusOneButton.addEventListener('click', () => {
-	modifyStringWithPadding(-1, 3);
+	modifyStringWithPadding(-1, currentNumberLength);
 });
 
 numberInput.addEventListener('change', () => {
-    modifyStringWithPadding(0, 3);
+    modifyStringWithPadding(0, currentNumberLength);
+});
+
+
+numberLengthInput.addEventListener('change', () => {
+	currentNumberLength = parseInt(numberLengthInput.value, 10) || 3;
 });
 
 function modifyStringWithPadding(delta, minLength) {
