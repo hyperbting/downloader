@@ -16,28 +16,35 @@ let currentNumberLength = 3;
 
 // Event listeners for Keyboards
 document.addEventListener('keyup', (e) => {
-	
+	// special case: if focus on numberInput
+	if (document.activeElement === numberInput) {
+		return;
+	}
+
+	let skipFocus = false;
 	switch (e.code) {
 		case "ArrowUp":
 			modifyStringWithPadding(10, currentNumberLength);
-			optionalNameInput.focus();
 			break;
 		case "ArrowDown":
 			modifyStringWithPadding(-10, currentNumberLength);
-			optionalNameInput.focus();
 			break;
 		case "ArrowLeft":
 			modifyStringWithPadding(-1, currentNumberLength);
-			optionalNameInput.focus();
 			break;
 		case "ArrowRight":
 			modifyStringWithPadding(1, currentNumberLength);
-			optionalNameInput.focus();
 			break;
 		default:
 			// Handle other keys or do nothing
+			skipFocus = true;
 			break;
 	}
+
+	if(!skipFocus){
+		optionalNameInput.focus();
+	}
+
 });
 
 // Event listeners for the buttons
