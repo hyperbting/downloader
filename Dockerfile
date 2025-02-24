@@ -15,7 +15,7 @@ RUN go mod download && go mod verify
 RUN go build -o /out/app .
 
 ### Build image
-FROM alpine:3.20
+FROM alpine:3
 
 RUN apk update && apk add --no-cache --update bash openssl ca-certificates curl
 #RUN apk update && apk add --no-cache --update bash openssl ca-certificates librdkafka-dev pkgconf

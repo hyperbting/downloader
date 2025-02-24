@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/template/mustache/v2"
 	"net/http"
-	"os/exec"
 )
 
 func main() {
@@ -43,35 +42,35 @@ func main() {
 		})
 	})
 
+	//app.Post("/download", func(c *fiber.Ctx) error {
+	//	p := new(models.DownloadTarget)
+	//	if err := c.BodyParser(p); err != nil {
+	//		return err
+	//	}
+	//
+	//	//log.Println(p.Group)
+	//	//log.Println(p.Number)
+	//	//log.Println(p.Name)
+	//	log.Info(p)
+	//
+	//	p.Sanitize()
+	//
+	//	// Create the command to execute the script
+	//	cmd := exec.Command("bash", "/ref/download.sh", p.Group, p.Number, p.Name)
+	//
+	//	// Set the working directory
+	//	cmd.Dir = "/ref"
+	//	log.Info(cmd.String())
+	//	// Capture the output
+	//	output, err := cmd.CombinedOutput()
+	//	if err != nil {
+	//		return c.JSON(fiber.Map{"error": err.Error()})
+	//	}
+	//
+	//	return c.JSON(fiber.Map{"result": "ok", "output": string(output)})
+	//})
+
 	app.Post("/download", func(c *fiber.Ctx) error {
-		p := new(models.DownloadTarget)
-		if err := c.BodyParser(p); err != nil {
-			return err
-		}
-
-		//log.Println(p.Group)
-		//log.Println(p.Number)
-		//log.Println(p.Name)
-		log.Info(p)
-
-		p.Sanitize()
-
-		// Create the command to execute the script
-		cmd := exec.Command("bash", "/ref/download.sh", p.Group, p.Number, p.Name)
-
-		// Set the working directory
-		cmd.Dir = "/ref"
-		log.Info(cmd.String())
-		// Capture the output
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			return c.JSON(fiber.Map{"error": err.Error()})
-		}
-
-		return c.JSON(fiber.Map{"result": "ok", "output": string(output)})
-	})
-
-	app.Post("/download2", func(c *fiber.Ctx) error {
 		p := new(models.DownloadTarget)
 		if err := c.BodyParser(p); err != nil {
 			return err

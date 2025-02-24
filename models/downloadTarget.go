@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -76,6 +77,10 @@ func (d *DownloadTarget) Sanitize() {
 	for _, c := range []string{"\t", "/", "／"} {
 		d.Name = strings.ReplaceAll(d.Name, c, " ")
 	}
+
+	// Regex to remove content inside square brackets, including the brackets themselves
+	re := regexp.MustCompile(`\[[^\]]+\]`)
+	d.Name = re.ReplaceAllString(d.Name, "")
 
 	// Replace multiple spaces with a single space
 	d.Name = strings.Join(strings.Fields(d.Name), " ")
