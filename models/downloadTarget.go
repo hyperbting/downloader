@@ -18,10 +18,11 @@ import (
 var (
 	TargetDmm TargetType = "dmm"
 	TargetMgs TargetType = "mgs"
-	dmmCats              = []string{"digital/video", "digital/amateur", "mono/movie", "digital/e-book"}
-	dmmSeps              = []string{"00", "", "0"}
-	mgsCats              = []string{"images/prestige", "images/jackson"}
-	mgsSeps              = []string{""}
+	dmmCats              = []string{"digital/video", "digital/amateur", "mono/movie"}//	"digital/e-book"
+
+	dmmSeps = []string{"00", "", "0"}
+	mgsCats = []string{"images/prestige", "images/jackson"}
+	mgsSeps = []string{""}
 
 	dmmUrl = url.URL{
 		Scheme: "https",
@@ -276,21 +277,23 @@ func (d *DownloadTarget) DownloadSub() (err error) {
 	}
 
 	var correctCat, correctHd string
+	cnt := 1
 outerLoop: // Label for the outermost loop
 	for _, hd := range []string{"jp", ""} {
 		for _, cat := range cats {
-			for cnt := 0; cnt <= 1; cnt++ {
-				u := d.BuildSubPath(cat, d.sep, cnt, hd)
+			//for cnt := 0; cnt <= 1; cnt++ {
+			u := d.BuildSubPath(cat, d.sep, cnt, hd)
+			log.Infof("Trying %v", u.Path)
 
-				// Get the file name from the URL path
-				fileName := path.Base(u.Path)
-
-				if err = d.DownloadRemoteFile(*u, path.Join(d.localPath, fileName)); err == nil {
-					correctCat = cat
-					correctHd = hd
-					break outerLoop // Exit all loops once condition is met
-				}
+			// Get the file name from the URL path
+			fileName := path.Base(u.Path)
+			if err = d.DownloadRemoteFile(*u, path.Join(d.localPath, fileName)); err == nil {
+				correctCat = cat
+				correctHd = hd
+				log.Infof("Catched:%#v", u.String())
+				break outerLoop // Exit all loops once condition is met
 			}
+			//}
 		}
 	}
 
@@ -299,7 +302,8 @@ outerLoop: // Label for the outermost loop
 		return http.ErrBodyNotAllowed
 	}
 
-	for cnt := 2; cnt <= 100; cnt++ {
+	log.Infof("Download params: cat:%v hd:%v", correctCat, correctHd)
+	for cnt := 2; cnt <= 50; cnt++ {
 		u := d.BuildSubPath(correctCat, d.sep, cnt, correctHd)
 
 		// Get the file name from the URL path
