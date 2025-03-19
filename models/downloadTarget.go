@@ -18,7 +18,7 @@ import (
 var (
 	TargetDmm TargetType = "dmm"
 	TargetMgs TargetType = "mgs"
-	dmmCats              = []string{"digital/video", "digital/amateur", "mono/movie"}//	"digital/e-book"
+	dmmCats              = []string{"digital/video", "digital/amateur", "mono/movie"} //	"digital/e-book"
 
 	dmmSeps = []string{"00", "", "0"}
 	mgsCats = []string{"images/prestige", "images/jackson"}
@@ -74,6 +74,14 @@ func (d *DownloadTarget) Sanitize() {
 
 	d.Group = strings.ToLower(d.Group)
 
+	// remove unwanted/repeated chars
+	d.sanitizeName()
+	// shorten the name to be less than 255 bytes
+	d.shortenName()
+}
+
+func (d *DownloadTarget) sanitizeName() {
+
 	// Replace all occurrences of \t with a single space
 	for _, c := range []string{"\t", "/", "／"} {
 		d.Name = strings.ReplaceAll(d.Name, c, " ")
@@ -87,6 +95,34 @@ func (d *DownloadTarget) Sanitize() {
 	d.Name = strings.Join(strings.Fields(d.Name), " ")
 	// Remove " " prefix and Suffix
 	d.Name = strings.TrimPrefix(strings.TrimSuffix(d.Name, " "), " ")
+}
+
+func (d *DownloadTarget) shortenName() {
+	//make sure the make not longer than 120?, but keep last element
+	for len(d.Name) > 200 {
+		words := strings.Fields(d.Name) // Split into words
+		l := len(words)
+		if l <= 0 {
+			return
+		}
+
+		switch l {
+		case 1:
+			runes := []rune(d.Name) // Convert string to rune slice (handles multi-byte characters)
+			newCharacters := int(float32(len(runes)) * 0.9)
+			d.Name = string(runes[:newCharacters]) // Keep only the first 100 characters
+			return
+		case 2:
+			runes := []rune(words[0]) // Convert string to rune slice (handles multi-byte characters)
+			newCharacters := int(float32(len(runes)) * 0.9)
+			words[0] = string(runes[:newCharacters]) // Keep only the first 100 characters
+		default:
+			// l >= 3
+			words = append(words[:l-2], words[l-1]) // Remove second-to-last but keep last word
+		}
+
+		d.Name = strings.Join(words, " ") // Reconstruct the name
+	}
 }
 
 func (d *DownloadTarget) BuildTitlePath(cat, sep string) *url.URL {
