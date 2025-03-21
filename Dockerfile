@@ -2,11 +2,11 @@
 FROM golang:alpine AS builder
 
 WORKDIR /src
-COPY ./downloader/views /src/views
-COPY ./downloader/models /src/models
-COPY ./downloader/go.mod /src/go.mod
-COPY ./downloader/go.sum /src/go.sum
-COPY ./downloader/main.go /src/main.go
+COPY ./views /src/views
+COPY ./models /src/models
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+COPY ./main.go /src/main.go
 
 RUN go mod download && go mod verify
 ###RUN apk update && apk add librdkafka-dev pkgconf
