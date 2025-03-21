@@ -98,10 +98,23 @@ func (d *DownloadTarget) sanitizeName() {
 }
 
 func (d *DownloadTarget) shortenName() {
+
+	for {
+		words := strings.Fields(d.Name) // Split into words
+		l := len(words)
+
+		if l <= 2 || words[l-1] != words[l-2] {
+			break
+		}
+
+		d.Name = strings.Join(words[:l-2], " ")
+	}
+
 	//make sure the make not longer than 120?, but keep last element
 	for len(d.Name) > 200 {
 		words := strings.Fields(d.Name) // Split into words
 		l := len(words)
+
 		if l <= 0 {
 			return
 		}
