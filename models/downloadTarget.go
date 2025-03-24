@@ -107,7 +107,8 @@ func (d *DownloadTarget) shortenName() {
 			break
 		}
 
-		d.Name = strings.Join(words[:l-2], " ")
+		// remove the last section
+		d.Name = strings.Join(words[:l-1], " ")
 	}
 
 	//make sure the make not longer than 120?, but keep last element
