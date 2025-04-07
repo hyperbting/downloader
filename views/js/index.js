@@ -7,6 +7,8 @@ const modNumberMinusOneButton = document.getElementById('modifyNumberMinusOneSub
 
 const numberLengthInput = document.getElementById('numberLength');
 const numberInput = document.getElementById('number');
+// const numberPrefixInput = document.getElementById('numberPrefix');
+// const numberSuffixInput = document.getElementById('numberSuffix');
 
 const optionalNameInput = document.getElementById('name')
 
@@ -112,9 +114,13 @@ document.getElementById('jsonForm').addEventListener('submit', async function (e
 	document.getElementById('result').value = '';
 
 	const jsonData = {};
+
 	formData.forEach((value, key) => {
 		jsonData[key] = value;
 	});
+
+	//console.log(jsonData);
+	jsonData["number"] = String(jsonData["numberPrefix"] || "") +	String(jsonData["number"] || "") + String(jsonData["numberSuffix"] || "");
 
 	// Send JSON via fetch
 	try {

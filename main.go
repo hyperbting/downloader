@@ -42,34 +42,6 @@ func main() {
 		})
 	})
 
-	//app.Post("/download", func(c *fiber.Ctx) error {
-	//	p := new(models.DownloadTarget)
-	//	if err := c.BodyParser(p); err != nil {
-	//		return err
-	//	}
-	//
-	//	//log.Println(p.Group)
-	//	//log.Println(p.Number)
-	//	//log.Println(p.Name)
-	//	log.Info(p)
-	//
-	//	p.Sanitize()
-	//
-	//	// Create the command to execute the script
-	//	cmd := exec.Command("bash", "/ref/download.sh", p.Group, p.Number, p.Name)
-	//
-	//	// Set the working directory
-	//	cmd.Dir = "/ref"
-	//	log.Info(cmd.String())
-	//	// Capture the output
-	//	output, err := cmd.CombinedOutput()
-	//	if err != nil {
-	//		return c.JSON(fiber.Map{"error": err.Error()})
-	//	}
-	//
-	//	return c.JSON(fiber.Map{"result": "ok", "output": string(output)})
-	//})
-
 	app.Post("/download", func(c *fiber.Ctx) error {
 		p := new(models.DownloadTarget)
 		if err := c.BodyParser(p); err != nil {
@@ -80,7 +52,7 @@ func main() {
 		p.SetLocalPathBase(localBasePath)
 
 		p.Sanitize()
-		log.Info(p)
+		log.Infof("DownloadTarget:%#v", p)
 
 		// try download main image
 		if err := p.TryDownloadMain(); err != nil {
